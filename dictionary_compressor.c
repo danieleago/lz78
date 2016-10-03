@@ -57,7 +57,6 @@ DICTIONARY* new_dictionary(int size) {
     }
 	d->root->index =d->next_index;
 	*/
-	d->next_index++;
     return d;
 }
 
@@ -103,11 +102,13 @@ void add_entry_new( DICTIONARY* d , char value , int father,ENTRY* e) {
 
 void init_dictionary (DICTIONARY* d){
 	char c;
+	add_entry( d , ' ' ,d->root);
+	d->current_pointer = d->root;
 	for (int i=0; i<=255; i++)
 	{
 		//printf("\n iteration %d",i);
 		c =(char)i;
-		add_entry( d , c ,d->root);
+		add_entry( d , c ,d->current_pointer);
 	}
 }
 
@@ -157,21 +158,27 @@ void print_dictionary(DICTIONARY* d) {
 }
 
 
-ENTRY* find_entry (DICTIONARY* d,char value, ENTRY* pointer_father) {
+ENTRY* find_entry (DICTIONARY* d,char value) {
 	ENTRY* s;
 	ENTRY temp;
 	memset(&temp, 0, sizeof(ENTRY));
 	temp.key.value = value;
-	temp.key.pointer_father = pointer_father;
+	temp.key.pointer_father = d->current_pointer;
 	
 	printf("seach %c    %d\n", temp.key.value, temp.key.pointer_father);
 	
 	HASH_FIND(hh, d->root, &temp.key, sizeof(KEY), s);
 	
     if (s!=NULL)
+	{
 		printf("found %c %d\n", s->key.value, s->key.pointer_father);
-	else 
+		d->current_pointer = s;
+	}
+	else
+	{
 		printf(" not found \n");
+		d->current_pointer = d->root;
+	}
 	return s;
 
 }
@@ -189,14 +196,20 @@ int main ()
 	printf("init\n");
 	print_dictionary(d);
 	printf("find\n");
-	f=find_entry (d,'f', d->root);
+	f=find_entry (d,'f');
+	
+	temp = find_entry(d,'d');
 	
 	
-	
-	if (f!=NULL)
+	if (temp == NULL)
 		add_entry( d , 'd' , f);
+	
 	print_dictionary(d);
-	temp=find_entry (d,'d', f);
+	temp=find_entry (d,'f');
+	
+	temp=find_entry (d,'d');
+	
+	
 	/*char c = 'f';
 		ENTRY* e = find_entry(d,c);
 	if(e!=NULL){
