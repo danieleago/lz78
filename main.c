@@ -16,31 +16,32 @@ char* data_file = 0;
 
 // funzione complessiva per la stampa degli errori
 void print_error(int tipo) {
+	printf("\nError:\n");
     switch (tipo)
 	{
 		case ERROR_PARAMITERS :	
-			printf("\n Usage: lz78 [-c]||[-d] -l dict size -i input_file -o output_file\n");
+			printf("Usage: lz78 [-c]||[-d] -l dict size -i input_file -o output_file\n");
 		break;
 		case ERROR_SIZE :	
-			printf("\n miss -l option \n");
+			printf("miss -l option \n");
 		break;
 		case ERROR_DICT_NOT_REQUIRED :
-			printf("\n dictionary size not required during decompression\n");
+			printf("dictionary size not required during decompression\n");
 		break;
 		case ERROR_INPUT_FILE :		
-			printf("\n miss -i option\n");
+			printf("miss -i option\n");
 		break;
 		case ERROR_OUTPUT_FILE :	
-			printf("\n miss -o option\n");
+			printf("miss -o option\n");
 		break;
 		case ERROR_OPEN :	
-			printf("\n NULL File descriptor\n");
+			printf("NULL File descriptor\n");
 		break;
 	/*	case 6 :	
 			printf("Usage: lz78 [-c]||[-d] -l dict size -i input_file -o output_file\n");
 		break;
 	*/	default:	
-			printf("\n default printf \n");
+			printf("default printf \n");
 		break;
 	}
 }
@@ -70,33 +71,38 @@ void check_command_line(int num_arg, char *arg_value[])
         exit(EXIT_FAILURE);
     }
 
-    if (compress == 0) {
+    if(compress==0 && dictionary_size==-1){ 
+		 print_error( ERROR_SIZE );
+		 exit(EXIT_FAILURE);
+	}
+		
+	if(decompress==0 && dictionary_size!=-1){
+		print_error ( ERROR_DICT_NOT_REQUIRED);
+		exit(EXIT_FAILURE);
+	}
+	
+    if(input_file==0){
+		print_error( ERROR_INPUT_FILE );
+		exit(EXIT_FAILURE);
+	}
+		
+    if(output_file==0){
+		print_error( ERROR_OUTPUT_FILE );
+		exit(EXIT_FAILURE);
+	} 
+	
+	printf("ok check\n" );
+	if (compress == 0) {
         printf("compress\n");
+        printf("dictionary size: %d\n",dictionary_size);
     }
 	
     if (decompress == 0) {
         printf("decompress\n");
     }
-	
-    if(compress==0 && dictionary_size==-1) 
-		 print_error( ERROR_SIZE );
-    else 
-		printf("dictionary size: %d\n",dictionary_size);
-	if(decompress==0 && dictionary_size!=-1)
-		print_error ( ERROR_DICT_NOT_REQUIRED);
-	else
-    if(input_file==0)
-		 print_error( ERROR_INPUT_FILE );
-    else 
-		printf("input file: %s\n",input_file);
-	
-    if(output_file==0)
-		 print_error( ERROR_OUTPUT_FILE );
-    else 
+
+	printf("input file: %s\n",input_file);
 	printf("output file: %s\n",output_file);
-
-
-	printf("\n ok check\n\n" );
 	
 }
 
@@ -105,7 +111,6 @@ int main(int num_arg, char *arg_value[]) {
 	int result = 0;
 	
 	check_command_line(num_arg,arg_value);
-	
 	
 	if ( compress == 0){
 
@@ -118,6 +123,5 @@ int main(int num_arg, char *arg_value[]) {
 
 	}
 
-	
     return result;
 }
