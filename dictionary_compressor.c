@@ -59,6 +59,37 @@ DICTIONARY* new_dictionary(int size) {
 	*/
     return d;
 }
+unsigned int index_entry(ENTRY* entry){
+	return entry->index;
+}
+char value_entry(ENTRY* entry){
+	return entry->key.value;
+}
+
+void print_dictionary(DICTIONARY* d) {
+    ENTRY* current_entry;
+    ENTRY* tmp;
+	int i;
+   /* for(s = d->root; s != NULL; s=s->hh.next) {
+        printf("\n entry index %d: value %s\n", s->index, s->value);
+    }*/
+	/*for (i = 1; i<=270; i++)
+	{
+	
+	 HASH_FIND_INT( d->root, &i, s);
+
+		 if (s!=NULL)
+		 {
+		 printf("\n entry index %d: value %c\n", s->index, s->value);
+		 }
+		
+	}*/
+	HASH_ITER(hh, d->root, current_entry, tmp) {
+		 printf("\n entry index %d: value %c father index %d\n", current_entry->index, current_entry->key.value , current_entry->father);
+	}
+	
+		  printf("\n fine printf \n");
+}
 
 
 void add_entry( DICTIONARY* d , char value, ENTRY* pointer_father) {
@@ -81,7 +112,7 @@ void add_entry( DICTIONARY* d , char value, ENTRY* pointer_father) {
 	else
 		temp->father=0;
     HASH_ADD(hh, d->root, key,sizeof(KEY), temp );  				//index is name of unique key 
-	
+	//print_dictionary(d);
 }
 
 /*
@@ -102,9 +133,10 @@ void add_entry_new( DICTIONARY* d , char value , int father,ENTRY* e) {
 
 void init_dictionary (DICTIONARY* d){
 	char c;
+	int i;
 	add_entry( d , ' ' ,d->root);
 	d->current_pointer = d->root;
-	for (int i=0; i<=255; i++)
+	for (i=0; i<=255; i++)
 	{
 		//printf("\n iteration %d",i);
 		c =(char)i;
@@ -132,30 +164,6 @@ destroy_dictionary(DICTIONARY* d) {
 }
 
 
-void print_dictionary(DICTIONARY* d) {
-    ENTRY* current_entry;
-    ENTRY* tmp;
-	int i;
-   /* for(s = d->root; s != NULL; s=s->hh.next) {
-        printf("\n entry index %d: value %s\n", s->index, s->value);
-    }*/
-	/*for (i = 1; i<=270; i++)
-	{
-	
-	 HASH_FIND_INT( d->root, &i, s);
-
-		 if (s!=NULL)
-		 {
-		 printf("\n entry index %d: value %c\n", s->index, s->value);
-		 }
-		
-	}*/
-	HASH_ITER(hh, d->root, current_entry, tmp) {
-		 printf("\n entry index %d: value %c father %d \n", current_entry->index, current_entry->key.value ,current_entry->key.pointer_father);
-	}
-	
-		  printf("\n fine printf \n");
-}
 
 
 ENTRY* find_entry (DICTIONARY* d,char value) {
@@ -165,25 +173,26 @@ ENTRY* find_entry (DICTIONARY* d,char value) {
 	temp.key.value = value;
 	temp.key.pointer_father = d->current_pointer;
 	
-	printf("seach %c    %d\n", temp.key.value, temp.key.pointer_father);
+	//printf("seach %d %c    %d\n",temp.index, temp.key.value,(int) temp.key.pointer_father);
 	
 	HASH_FIND(hh, d->root, &temp.key, sizeof(KEY), s);
 	
     if (s!=NULL)
 	{
-		printf("found %c %d\n", s->key.value, s->key.pointer_father);
+		//printf("found %d %c %d\n",s->index, s->key.value, (int)s->key.pointer_father);
 		d->current_pointer = s;
 	}
 	else
 	{
-		printf(" not found \n");
+		//printf(" not found \n");
 		d->current_pointer = d->root;
 	}
+	//print_dictionary(d);
 	return s;
 
 }
 
-
+/*
 int main ()
 {
 	ENTRY* f;
@@ -202,7 +211,7 @@ int main ()
 	
 	
 	if (temp == NULL)
-		add_entry( d , 'd' , f);
+		add_entry( d , 'd', f);
 	
 	print_dictionary(d);
 	temp=find_entry (d,'f');
@@ -231,6 +240,6 @@ int main ()
 		}
 	}
 	 print_dictionary(d);
-	*/
+	
 	return 0;
-}
+} */

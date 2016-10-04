@@ -8,4 +8,6 @@ void add_entry( DICTIONARY* , char , ENTRY* );
 void init_dictionary (DICTIONARY* );
 void clear_dictionary(DICTIONARY*);
 void destroy_dictionary(DICTIONARY*);
+unsigned int index_entry(ENTRY*);
+char value_entry(ENTRY*);
 ENTRY* find_entry (DICTIONARY*,char);
