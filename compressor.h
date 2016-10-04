@@ -1,0 +1,1 @@
+void compressor( char*, char*, unsigned int);
