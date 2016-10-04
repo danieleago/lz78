@@ -11,12 +11,10 @@
 #include "header.h"
 #include "bit_io.h"
 
-
-int write_header(char *input_file, char* output_file, unsigned int dictionary_size, unsigned long crc) {
+int write_header(char *input_file, bit_io* bit_output, unsigned int dictionary_size, unsigned long crc) {
 	int i,ret;	
 	unsigned long header_crc = 0;	
 	int fd_input = open(input_file, O_RDONLY);
-	bit_io* bit_output = bit_open(output_file, 1);
 	if(bit_output==NULL){
 		printf("Error open file\n");			     
 		return -1;
@@ -75,18 +73,15 @@ int write_header(char *input_file, char* output_file, unsigned int dictionary_si
         	return -1;
     	}
 
-	bit_close(bit_output);
 	return 0;
 }
 
-int read_header(char *input_file) {
+int read_header(bit_io* bit_input, unsigned int* dictionary_size) {
 	int i=0,ret;	
 	uint8_t length_name;
 	uint64_t buffer;
 	unsigned long header_crc = 0;	
-	char filename[255];
-	bit_io* bit_input;
-	bit_input = bit_open(input_file, 0);    
+	char filename[255];    
 	ret = bit_read(bit_input, 8,(uint64_t*)&length_name);
         	if (ret != 8) {
             		printf("Error reading file name\n");
@@ -115,8 +110,8 @@ int read_header(char *input_file) {
         	return -1;
     	}
     	header_crc =update_crc(header_crc, (char*) &buffer, 4);
-	uint64_t dictionary_size = le64toh((uint64_t)buffer);
-	printf("dictionary size: %llu\n", dictionary_size);
+	*dictionary_size = le64toh((uint64_t)buffer);
+	printf("dictionary size: %u\n", *dictionary_size);
    
 	ret = bit_read(bit_input, 64, &buffer);
     	if (ret != 64) {
@@ -145,7 +140,5 @@ int read_header(char *input_file) {
 	printf("header crc read: %lu\n", h_crc);
 	printf("header crc calculated: %lu \n", header_crc);
 	if(h_crc==header_crc) printf("header crc correctly verify\n");
-
-	bit_close(bit_input);
 	return 0;
 } 

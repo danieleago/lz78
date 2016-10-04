@@ -1,8 +1,12 @@
-#include "constant.h"
 #include <stdio.h>
 #include <getopt.h>
 #include <string.h>
+#include <stdint.h>
+#include <sys/types.h> 
 #include <stdlib.h>
+
+#include "constant.h"
+#include "bit_io.h"
 //extern int make_compress();
 //extern int make_decompress();
 
@@ -111,16 +115,24 @@ int main(int num_arg, char *arg_value[]) {
 	int result = 0;
 	
 	check_command_line(num_arg,arg_value);
-	
+		
 	if ( compress == 0){
-
-		result = write_header(input_file, output_file, dictionary_size, 0);
-
+		bit_io* bit_output = bit_open(output_file,1);
+		result = write_header(input_file, bit_output, dictionary_size, 0);
+		bit_io* bit_input = bit_open(input_file,0);
+		compressor(bit_input, bit_output, dictionary_size);
+		bit_close(bit_input);
+		bit_close(bit_output);
 	}
 	
 	if ( decompress == 0){
-		result = read_header(input_file);
-
+		bit_io* bit_input = bit_open(input_file,0);
+		bit_io* bit_output = bit_open(output_file,1);
+		unsigned int dictionary_size;
+		read_header(bit_input,&dictionary_size);
+		//decompressor(bit_input, bit_output, dictionary_size);
+		bit_close(bit_input);
+		bit_close(bit_output);
 	}
 
     return result;
