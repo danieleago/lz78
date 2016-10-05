@@ -32,7 +32,7 @@ int compressor(bit_io* bit_input, bit_io* bit_output, unsigned int dictionary_si
 		}
 		entry = new_entry;
 	}
-	buffer = value_entry(entry);
+	buffer = index_entry(entry);
 	bit_write(bit_output,sizeof(unsigned int),buffer);
 	printf("index write last symbol %u\n",(unsigned int)buffer);
 	bit_write(bit_output,sizeof(unsigned int),0);
