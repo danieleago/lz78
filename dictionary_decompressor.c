@@ -91,8 +91,8 @@ void init_dictionary (DICTIONARY* d){
     HASH_ADD_INT( d->root,index, temp);
 	
 	d->current_pointer = d->root;
-
-	for (int i=0; i<=255; i++)
+	int i;
+	for (i=0; i<=255; i++)
 	{
 		//printf("\n iteration %d",i);
 		c =(char)i;
@@ -199,7 +199,7 @@ char* find_code(DICTIONARY* d,int index){
 }
 
 
-
+/*
 int main ()
 {
 	char* string ;
@@ -404,11 +404,11 @@ int main ()
 	else 
 		printf("string null \n");
 	strcat(msg, string);
-	*/
+	
 		
 		
 	printf("messaggio: %s \n",msg);
 		
 		//print_dictionary(d);
 	return 0;
-}
+} */
