@@ -120,7 +120,7 @@ int main(int num_arg, char *arg_value[]) {
 		bit_io* bit_output = bit_open(output_file,1);
 		result = write_header(input_file, bit_output, dictionary_size, 0);
 		bit_io* bit_input = bit_open(input_file,0);
-		compressor(bit_input, bit_output, dictionary_size);
+		//compressor(bit_input, bit_output, dictionary_size);
 		bit_close(bit_input);
 		bit_close(bit_output);
 	}
@@ -130,7 +130,7 @@ int main(int num_arg, char *arg_value[]) {
 		bit_io* bit_output = bit_open(output_file,1);
 		unsigned int dictionary_size;
 		read_header(bit_input,&dictionary_size);
-		//decompressor(bit_input, bit_output, dictionary_size);
+		decompressor(bit_input, bit_output, dictionary_size);
 		bit_close(bit_input);
 		bit_close(bit_output);
 	}

@@ -32,14 +32,14 @@ int write_header(char *input_file, bit_io* bit_output, unsigned int dictionary_s
         	}
 		header_crc = update_crc(header_crc, &input_file[i],1);
 	}
-	uint64_t buf_dict = htole64((uint64_t)dictionary_size);   
-	printf("dictionary size: %llu\n",buf_dict);
+	uint32_t buf_dict = htole32((uint32_t)dictionary_size);   
+	printf("dictionary size: %u\n",buf_dict);
 	ret = bit_write(bit_output, 32, buf_dict);
     	if (ret ==-1) {
         	printf("Error writing dictionary size: %s\n",strerror(errno));
         	return -1;
     	}
-    	header_crc =update_crc(header_crc, (char*) &buf_dict, 4);
+    header_crc =update_crc(header_crc, (char*) &buf_dict, 4);
 
 	struct stat file_info;
 	if(fstat(fd_input,&file_info)<0){
