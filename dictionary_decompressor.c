@@ -10,8 +10,9 @@
 typedef struct ENTRY
 {
     unsigned char value; 		// current value
-    int father; 				// All the elements with father = 0 are children of root , -1 is the father of root
+    unsigned int father; 		// All the elements with father = 0 are children of root , -1 is the father of root
     unsigned int index;  		// index = 0 is the root of dictionary
+	unsigned int level; 		// number of level in tree
 	UT_hash_handle hh;          // makes this structure hashable
 }ENTRY;
 
@@ -21,7 +22,7 @@ typedef struct ENTRY
 struct DICTIONARY
 {
     ENTRY* root ;				// pointer of root 
-	ENTRY* current_pointer ;	// pointer of root 
+	ENTRY* current_pointer ;	// pointer of current node 
     int size; 					// max number of element
     int next_index;				// next index for next entry
 };
@@ -49,7 +50,7 @@ DICTIONARY* new_dictionary(int size) {
 
 
 
-void add_entry( DICTIONARY* d , char value, int father_index) {
+void add_entry( DICTIONARY* d , char value,unsigned int father_index , unsigned int level) {
     
 	ENTRY* temp;
 	
@@ -63,7 +64,8 @@ void add_entry( DICTIONARY* d , char value, int father_index) {
     temp->index = d->next_index;
 	d->next_index++;
 	temp->father= father_index;
-	temp->value=value;
+	temp->value = value;
+	temp->level = level + 1 ;
     HASH_ADD_INT( d->root,index, temp);  				//index is name of unique key 
 	printf("inserisco all'indice %d il valore %c con padre  %d \n",temp->index,value,temp->father);
 }
@@ -72,13 +74,29 @@ void add_entry( DICTIONARY* d , char value, int father_index) {
 
 void init_dictionary (DICTIONARY* d){
 	char c;
-	add_entry( d , ' ' ,-1);
+	ENTRY* temp;
+	temp =(ENTRY *)malloc(sizeof(ENTRY));
+	
+	if (temp == NULL) {
+        printf("\n  Error: dictionary allocation failed. \n");
+        return;
+	}
+	memset(temp, 0, sizeof(ENTRY));
+    temp->index = d->next_index;
+	d->next_index++;
+	temp->father= 0;
+	temp->value=' ';
+	temp->level=0;
+	
+    HASH_ADD_INT( d->root,index, temp);
+	
 	d->current_pointer = d->root;
+
 	for (int i=0; i<=255; i++)
 	{
 		//printf("\n iteration %d",i);
 		c =(char)i;
-		add_entry( d , c ,0);
+		add_entry( d , c ,temp->index , temp->level);
 	}
 }
 
@@ -128,45 +146,54 @@ char* find_code(DICTIONARY* d,int index){
 	char* ret;
 	int n;
 	int i;
+	int flag = 0;
+	ret = NULL;
+	if(index == d->next_index){
+		add_entry(d ,d->current_pointer->value, d->current_pointer->index ,d->current_pointer->level );
+		flag=1;
+	}
+	
 	HASH_FIND_INT( d->root, &index, tmp ); 
-	printf("find \n");
 	if(tmp!=NULL)
 	{
 		
-		n = 1;
-		
-		//--------------possibile miglioria
-		
-		while(tmp->father != 0)
-		{
-			oldtmp= tmp;
-			HASH_FIND_INT( d->root, &oldtmp->father, tmp ); 
-			n++;
-		}
+		printf("find \n");
+		n = tmp->level;
 		
 		ret = (char*)malloc(sizeof(char)*(n+1)); 		// +1 end string
 		memset(ret, 0,sizeof(char)*(n+1));
 		
-		printf("value   %d \n",n);
+		printf("n ==   %d \n",n);
 		tmp = NULL;
 		oldtmp = NULL;
 		i= index;
 		
 		HASH_FIND_INT( d->root, &i, tmp );
 		oldtmp = tmp;
+
 		while(n>0)
 		{	 
 			n--;
-			printf("value   %c \n",tmp->value);
+			printf("value   %c   father  %d  \n",tmp->value,tmp->father);
+			printf("value father  %c   father  %d  \n",oldtmp->value,oldtmp->father);
 			ret[n]=tmp->value;
 			i=tmp->father;
-			if(tmp->father == 0 && d->current_pointer!=d->root)
+			
+			if(tmp->father == 0 && d->current_pointer != d->root && flag==0)
 			{
-				add_entry(d ,tmp->value, d->current_pointer->index);
+				printf("aggiungo value %c   index current  %d  \n", tmp->value , d->current_pointer->index);
+				add_entry(d ,tmp->value, d->current_pointer->index ,d->current_pointer->level );
 			}
 			HASH_FIND_INT( d->root, &i, tmp );
 		}
+		
 		d->current_pointer = oldtmp;
+		
+		
+	}
+	else
+	{
+			printf(" not find \n");
 	}
 	return ret; 
 }
@@ -184,6 +211,8 @@ int main ()
 	//add_entry(d ,'d', 103);
 	//add_entry(d ,'r', 257);
 	printf("init\n");
+	
+	//abcabceeef
 	/*
 	string = find_code(d,98);
 	if(string)
@@ -227,7 +256,7 @@ int main ()
 		printf("string null \n");
 	strcat(msg, string);
 		
-	string = find_code(d,102);
+	string = find_code(d,262);
 	if(string)
 		printf("value of index 262 %s \n",string);
 	else 
@@ -241,6 +270,11 @@ int main ()
 		printf("string null \n");
 	strcat(msg, string);
 	*/
+	
+	//aaaaba
+	
+	/*
+	printf("1 \n\n");
 	string = find_code(d,98);
 	if(string)
 		printf("value of index 98 %s \n",string);
@@ -249,12 +283,43 @@ int main ()
 	strcat(msg, string);
 	
 	
+	printf("2 \n\n");
 	string = find_code(d,257);
 	if(string)
 		printf("value of index 257 %s \n",string);
 	else 
 		printf("string null \n");
 	strcat(msg, string);
+	
+	printf("3 \n\n");
+	string = find_code(d,98);
+	if(string)
+		printf("value of index 98 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	
+	
+	printf("4 \n\n");
+	string = find_code(d,99);
+	if(string)
+		printf("value of index 99 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	
+	printf("5 \n\n");
+	string = find_code(d,98);
+	if(string)
+		printf("value of index 98 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	*/
+	
+	
+	//abcdaaaaaaaabcdgf
+	/*
 	
 	string = find_code(d,98);
 	if(string)
@@ -270,15 +335,79 @@ int main ()
 		printf("string null \n");
 	strcat(msg, string);
 	
-	string = find_code(d,98);
+	string = find_code(d,100);
 	if(string)
-		printf("value of index 98 %s \n",string);
+		printf("value of index 100 %s \n",string);
 	else 
 		printf("string null \n");
 	strcat(msg, string);
 	
+	string = find_code(d,101);
+	if(string)
+		printf("value of index 257 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
 	
-		printf("messaggio: %s \n",msg);
+	string = find_code(d,98);
+	if(string)
+		printf("value of index 100 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	
+	string = find_code(d,261);
+	if(string)
+		printf("value of index 102 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+		
+	string = find_code(d,262);
+	if(string)
+		printf("value of index 262 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	
+	string = find_code(d,261);
+	if(string)
+		printf("value of index 103 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	
+	string = find_code(d,258);
+	if(string)
+		printf("value of index 103 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	
+	string = find_code(d,101);
+	if(string)
+		printf("value of index 103 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	
+	string = find_code(d,104);
+	if(string)
+		printf("value of index 103 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	
+	string = find_code(d,103);
+	if(string)
+		printf("value of index 103 %s \n",string);
+	else 
+		printf("string null \n");
+	strcat(msg, string);
+	*/
+		
+		
+	printf("messaggio: %s \n",msg);
 		
 		//print_dictionary(d);
 	return 0;
