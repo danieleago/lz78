@@ -16,11 +16,9 @@ int decompressor(bit_io* bit_input, bit_io* bit_output, unsigned int dictionary_
 
 	DICTIONARY* dictionary = new_dictionary(dictionary_size);
 	init_dictionary(dictionary);
-	ENTRY* old_entry=NULL;
 	int i;
 	unsigned long crc=0;
 	char* branch;
-	unsigned int old_index;
 	unsigned int index;
 	uint64_t buffer;
 	while(bit_read(bit_input,32,&buffer)>0){
@@ -33,10 +31,6 @@ int decompressor(bit_io* bit_input, bit_io* bit_output, unsigned int dictionary_
 			printf("symbol write %c\n",(char) branch[i]);
 			crc = update_crc(crc,&branch[i],1);
 		}
-		if(old_entry!=NULL){
-			add_entry(dictionary,(char)branch[i], old_index,0);
-		}
-		old_index = index;
 	}
 	printf("error decompressor: index 0 not read\n");
 	eof: printf("read EOF\n");
