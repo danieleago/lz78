@@ -1,9 +1,6 @@
 
 #include "dictionary_decompressor.h"
 
-// max numeber of element in to dictionary
-#define DEFAULT_MAX_NUMBER_OF_ELEMENTS 512
-
 struct ENTRY
 {
     unsigned char value; 		// current value
@@ -54,15 +51,12 @@ static void add_entry( DICTIONARY* d , char value,unsigned int father_index , un
         return;
 	}
 	memset(temp, 0, sizeof(ENTRY));
-    	temp->index = d->next_index;
+    temp->index = d->next_index;
 	d->next_index++;
 	temp->father= father_index;
 	temp->value = value;
 	temp->level = level + 1 ;
-    	HASH_ADD_INT( d->root,index, temp);  				//index is name of unique key 
-	//printf("inserisco all'indice %d il valore %c con padre  %d \n",temp->index,value,temp->father);
-	
-
+    HASH_ADD_INT( d->root,index, temp);  				//index is name of unique key 
 }
 
 
@@ -90,11 +84,9 @@ static void init_dictionary (DICTIONARY* d){
 	int i;
 	for (i=0; i<=255; i++)
 	{
-		//printf("\n iteration %d",i);
 		c =(char)i;
 		add_entry( d , c ,temp->index , temp->level);
 	}
-	//printf("fine init \n");
 }
 
 
@@ -127,8 +119,6 @@ char* find_code(DICTIONARY* d,int index, int* num){
 	ret = NULL;
 	
 		if(index == d->next_index){
-			
-			//printf("add 1\n");
 			add_entry(d ,d->current_pointer->value, d->current_pointer->index ,d->current_pointer->level );
 			flag=1;
 		}
@@ -136,41 +126,28 @@ char* find_code(DICTIONARY* d,int index, int* num){
 		HASH_FIND_INT( d->root, &index, tmp ); 
 		if(tmp!=NULL)
 		{
-		
-			//printf("find \n");
 			*num = n = tmp->level;
 		
 			ret = (char*)malloc(sizeof(char)*(n+2)); 		// +1 end string
 			memset(ret, 0,sizeof(char)*(n+2));
-		
-			//printf("n ==   %d \n",n);
 			tmp = NULL;
 			oldtmp = NULL;
 			i= index;
-		
 			HASH_FIND_INT( d->root, &i, tmp );
 			oldtmp = tmp;
 			while(n>0)
 			{	 
 				n--;
-				//printf("value   %c   father  %d  \n",tmp->value,tmp->father);
-				//printf("value father  %c   father  %d  \n",oldtmp->value,oldtmp->father);
 				ret[n]=tmp->value;
 				i=tmp->father;
 			
 				if(tmp->father == 0 && d->current_pointer != d->root && flag==0)
 				{
-					//printf("aggiungo value %c   index current  %d  \n", tmp->value , d->current_pointer->index);
-					
-					//printf("add 2\n");
 					add_entry(d ,tmp->value, d->current_pointer->index ,d->current_pointer->level );
 				}
 				HASH_FIND_INT( d->root, &i, tmp );
-			}
-		
+			}		
 			d->current_pointer = oldtmp;
-		
-		
 		}
 		else
 		{
@@ -193,16 +170,12 @@ int decompressor(bit_io* bit_input, bit_io* bit_output, unsigned int dictionary_
 	uint64_t buffer;
 	while(bit_read(bit_input,32,&buffer)>0){
 		index = le32toh((uint32_t)buffer);
-		//printf("index %u\n",(unsigned int) index);
 		if(index==0) goto eof;
 		if(dictionary->size < dictionary->next_index)
 			reset_dictionary(dictionary);			
-
 		branch = find_code(dictionary,index,&num);
-		//printf("symbol write: ");
 		for(i=0;i<num;i++){
 			bit_write(bit_output,8, branch[i]);
-			//printf("%c",(char) branch[i]);
 			crc = update_crc(crc,&branch[i],1);
 		}
 		bzero(branch,sizeof(char)*(num+2));
