@@ -44,10 +44,7 @@ void print_error(int tipo) {
 		case ERROR_OPEN :	
 			printf("NULL File descriptor\n");
 		break;
-	/*	case 6 :	
-			printf("Usage: lz78 [-c]||[-d] -l dict size -i input_file -o output_file\n");
-		break;
-	*/	default:	
+		default:	
 			printf("default printf \n");
 		break;
 	}
@@ -96,14 +93,14 @@ void check_command_line(int num_arg, char *arg_value[])
 		exit(EXIT_FAILURE);
 	} 
 	
-	printf("ok check\n" );
+	printf("\n\n" );
 	if (compress == 0) {
-        printf("compress\n");
+        printf("Start compression..\n\n");
         printf("dictionary size: %d\n",dictionary_size);
     }
 	
     if (decompress == 0) {
-        printf("decompress\n");
+        printf("Start decompression..\n\n");
     }
 
 	printf("input file: %s\n",input_file);
