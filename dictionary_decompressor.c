@@ -103,8 +103,9 @@ static void destroy_dictionary(DICTIONARY* d) {
     ENTRY* tmp;
    
 	HASH_ITER(hh, d->root, current_entry, tmp) {
-		 HASH_DEL(d->root, current_entry);
-     		 free(current_entry);
+		HASH_DEL(d->root, current_entry);
+		bzero(current_entry,sizeof(DICTIONARY));
+    	free(current_entry);
 	}
 	
 }
@@ -115,28 +116,6 @@ static void reset_dictionary(DICTIONARY* d) {
   init_dictionary(d);
 }
 
-
-
-
-/*
-static void print_dictionary(DICTIONARY* d) {
-    ENTRY* current_entry;
-    ENTRY* tmp;
-   
-	HASH_ITER(hh, d->root, current_entry, tmp) {
-		 printf("\n entry index %d: value %c father %d \n", current_entry->index, current_entry->value ,current_entry->father);
-	}
-	
-		  printf("\n fine printf \n");
-}
-*/
-
-/*ENTRY* find_entry (DICTIONARY* d,int index){
-	ENTRY* tmp ;
-	HASH_FIND_INT( d->root, &index, tmp );  
-	return tmp;
-}
-*/
 
 char* find_code(DICTIONARY* d,int index, int* num){
 	ENTRY* tmp;
@@ -226,229 +205,21 @@ int decompressor(bit_io* bit_input, bit_io* bit_output, unsigned int dictionary_
 			//printf("%c",(char) branch[i]);
 			crc = update_crc(crc,&branch[i],1);
 		}
-		//printf("\n");
+		bzero(branch,sizeof(char)*(num+2));
+		free(branch);
 	}
 	printf("error decompressor: index 0 not read\n");
-	eof: printf("read EOF\n");
+	eof: printf("\n..Decompression terminated!\n");
 	bit_read(bit_input,64,&buffer);
 	unsigned long crc_read = le64toh(buffer);
 	printf("payload crc read: %lu\n", crc_read);
 	printf("payload crc calculated: %lu \n", crc);
-	if(crc_read==crc) printf("crc verified\n");
-	else printf("crc not verified\n");
-
+	if(crc_read==crc) printf("crc verified!\n");
+	else printf("crc not verified \n");
+	bzero(dictionary,sizeof(DICTIONARY));
+	free(dictionary);
 	return 0;
 }
 /*
-int main ()
-{
-	char* string ;
-	char msg[124];
-	printf("start\n");
-	DICTIONARY* d = new_dictionary( 500 );
-	printf("create\n");
-	init_dictionary(d);
-	//add_entry(d ,'d', 103);
-	//add_entry(d ,'r', 257);
-	printf("init\n");
-	
-	//abcabceeef
-	
-	string = find_code(d,98);
-	if(string)
-		printf("value of index 98 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,99);
-	if(string)
-		printf("value of index 99 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,100);
-	if(string)
-		printf("value of index 100 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,257);
-	if(string)
-		printf("value of index 257 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,100);
-	if(string)
-		printf("value of index 100 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,102);
-	if(string)
-		printf("value of index 102 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-		
-	string = find_code(d,262);
-	if(string)
-		printf("value of index 262 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,103);
-	if(string)
-		printf("value of index 103 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	
-	//aaaaba
-	
-	
-	printf("1 \n\n");
-	string = find_code(d,98);
-	if(string)
-		printf("value of index 98 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	
-	printf("2 \n\n");
-	string = find_code(d,257);
-	if(string)
-		printf("value of index 257 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	printf("3 \n\n");
-	string = find_code(d,98);
-	if(string)
-		printf("value of index 98 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	
-	printf("4 \n\n");
-	string = find_code(d,99);
-	if(string)
-		printf("value of index 99 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	printf("5 \n\n");
-	string = find_code(d,98);
-	if(string)
-		printf("value of index 98 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	
-	
-	//abcdaaaaaaaabcdgf
-	
-	
-	string = find_code(d,98);
-	if(string)
-		printf("value of index 98 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,99);
-	if(string)
-		printf("value of index 99 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,100);
-	if(string)
-		printf("value of index 100 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,101);
-	if(string)
-		printf("value of index 257 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,98);
-	if(string)
-		printf("value of index 100 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,261);
-	if(string)
-		printf("value of index 102 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-		
-	string = find_code(d,262);
-	if(string)
-		printf("value of index 262 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,261);
-	if(string)
-		printf("value of index 103 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,258);
-	if(string)
-		printf("value of index 103 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,101);
-	if(string)
-		printf("value of index 103 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,104);
-	if(string)
-		printf("value of index 103 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-	string = find_code(d,103);
-	if(string)
-		printf("value of index 103 %s \n",string);
-	else 
-		printf("string null \n");
-	strcat(msg, string);
-	
-		
-		
-	printf("messaggio: %s \n",msg);
-		
-		//print_dictionary(d);
-	return 0;
+
 } */
