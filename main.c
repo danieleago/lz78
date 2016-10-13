@@ -7,15 +7,18 @@
 
 #include "constant.h"
 #include "bit_io.h"
-//extern int make_compress();
-//extern int make_decompress();
+
+extern int write_header(char *, bit_io*, unsigned int);
+extern int read_header(bit_io*,unsigned int*);
+extern int compressor(bit_io*, bit_io*,unsigned int);
+extern int decompressor(bit_io*, bit_io*, unsigned int);
 
 int option = 0;
 int compress = -1;
 int decompress = -1;
 int dictionary_size = -1;
-char* input_file= 0;
-char* output_file= 0;
+char* input_file= NULL;
+char* output_file= NULL;
 char* data_file = 0;
 
 // funzione complessiva per la stampa degli errori
@@ -55,19 +58,17 @@ void check_command_line(int num_arg, char *arg_value[])
 {
 	while ((option = getopt(num_arg, arg_value,"cdl:i:o:")) != -1) {
         switch (option) {
-             case 'c' : compress= 0;
-                 break;
-             case 'd' : decompress = 0;
-                 break;
-             case 'l' : dictionary_size = atoi(optarg); 
-                 break;
-             case 'i' : input_file=malloc(strlen(optarg));
-			strcpy(input_file,optarg);
-                 break;
-	     case 'o' : output_file=malloc(strlen(optarg));
-			strcpy(output_file,optarg);
-		 break;
-             default: break;
+            case 'c' : compress= 0;
+       		    break;
+            case 'd' : decompress = 0;
+                break;
+            case 'l' : dictionary_size = atoi(optarg); 
+                break;
+            case 'i' : input_file = optarg;
+                break;
+	     	case 'o' : output_file = optarg;
+		 		break;
+            default: break;
         }
     }
     if ((compress == -1 && decompress ==-1)||(compress == 0 && decompress ==0))  {
@@ -85,12 +86,12 @@ void check_command_line(int num_arg, char *arg_value[])
 		exit(EXIT_FAILURE);
 	}
 	
-    if(input_file==0){
+    if(input_file==NULL){
 		print_error( ERROR_INPUT_FILE );
 		exit(EXIT_FAILURE);
 	}
 		
-    if(output_file==0){
+    if(output_file==NULL){
 		print_error( ERROR_OUTPUT_FILE );
 		exit(EXIT_FAILURE);
 	} 
@@ -118,9 +119,9 @@ int main(int num_arg, char *arg_value[]) {
 		
 	if ( compress == 0){
 		bit_io* bit_output = bit_open(output_file,1);
-		result = write_header(input_file, bit_output, dictionary_size, 0);
+		result = write_header(input_file, bit_output, dictionary_size);
 		bit_io* bit_input = bit_open(input_file,0);
-		//compressor(bit_input, bit_output, dictionary_size);
+		compressor(bit_input, bit_output, dictionary_size);
 		bit_close(bit_input);
 		bit_close(bit_output);
 	}

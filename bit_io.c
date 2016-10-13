@@ -6,6 +6,14 @@
 #include "constant.h"
 #include "bit_io.h"
 
+struct bitio{ 
+	FILE * file_pointer;		
+	uint64_t data;				
+	u_int write_pointer;		
+	u_int read_pointer;			
+	u_int mode;     // 0 --> READ    1 --> WRITE
+};
+
 /* Creates a new bit_io opening a file f with the specificated mode */ 
 bit_io* bit_open(const char * name, u_int mode){
 	bit_io * temp;
@@ -66,7 +74,7 @@ int bit_read (bit_io* pointer, u_int size , uint64_t *data)
 			pointer->read_pointer = size-space;
 		}else{
 			*data |= pointer->data << space;
-			*data &= 1ULL << (pointer->write_pointer + space) -1;
+			*data &= 1ULL << ((pointer->write_pointer + space) -1);
 			pointer->read_pointer = pointer->write_pointer;
 			return pointer->write_pointer + space;
 		}

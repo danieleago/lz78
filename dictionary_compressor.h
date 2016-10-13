@@ -1,13 +1,15 @@
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <fcntl.h>
+#include <errno.h> 
+#include <stdint.h>
+
+#include "uthash.h"
+#include "bit_io.h"
+#include "lib_crc.h"
 
 typedef struct DICTIONARY DICTIONARY;
 typedef struct ENTRY ENTRY;
 typedef struct KEY KEY;
-
-DICTIONARY* new_dictionary(int);
-void add_entry( DICTIONARY* , char , ENTRY* );
-void init_dictionary (DICTIONARY* );
-void clear_dictionary(DICTIONARY*);
-void destroy_dictionary(DICTIONARY*);
-unsigned int index_entry(ENTRY*);
-char value_entry(ENTRY*);
-ENTRY* find_entry (DICTIONARY*,char);

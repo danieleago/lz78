@@ -1,28 +1,22 @@
-#include "dictionary_decompressor.h"
-#include "uthash.h"
-#include <string.h>
-#include <stdio.h>
 
+#include "dictionary_decompressor.h"
 
 // max numeber of element in to dictionary
 #define DEFAULT_MAX_NUMBER_OF_ELEMENTS 512
 
-typedef struct ENTRY
+struct ENTRY
 {
     unsigned char value; 		// current value
     unsigned int father; 		// All the elements with father = 0 are children of root , -1 is the father of root
     unsigned int index;  		// index = 0 is the root of dictionary
 	unsigned int level; 		// number of level in tree
 	UT_hash_handle hh;          // makes this structure hashable
-}ENTRY;
-
-
-
+};
 
 struct DICTIONARY
 {
     ENTRY* root ;				// pointer of root 
-	ENTRY* current_pointer ;	// pointer of current node 
+    ENTRY* current_pointer ;	// pointer of current node 
     int size; 					// max number of element
     int next_index;				// next index for next entry
 };
@@ -34,7 +28,7 @@ struct DICTIONARY
  * @return The pointer to the dictionary
  */
  
-DICTIONARY* new_dictionary(int size) {
+static DICTIONARY* new_dictionary(int size) {
     DICTIONARY * d = (DICTIONARY *)calloc(1, sizeof(DICTIONARY));
     if (d == NULL) {
         printf("\n  Error: dictionary allocation failed. \n");
@@ -44,13 +38,12 @@ DICTIONARY* new_dictionary(int size) {
 	d->next_index = 0;
 	d->root=NULL;
 	d->current_pointer=NULL;
-	
     return d;
 }
 
 
 
-void add_entry( DICTIONARY* d , char value,unsigned int father_index , unsigned int level) {
+static void add_entry( DICTIONARY* d , char value,unsigned int father_index , unsigned int level) {
     
 	ENTRY* temp;
 	
@@ -61,20 +54,23 @@ void add_entry( DICTIONARY* d , char value,unsigned int father_index , unsigned 
         return;
 	}
 	memset(temp, 0, sizeof(ENTRY));
-    temp->index = d->next_index;
+    	temp->index = d->next_index;
 	d->next_index++;
 	temp->father= father_index;
 	temp->value = value;
 	temp->level = level + 1 ;
-    HASH_ADD_INT( d->root,index, temp);  				//index is name of unique key 
-	printf("inserisco all'indice %d il valore %c con padre  %d \n",temp->index,value,temp->father);
+    	HASH_ADD_INT( d->root,index, temp);  				//index is name of unique key 
+	//printf("inserisco all'indice %d il valore %c con padre  %d \n",temp->index,value,temp->father);
+	
+
 }
 
 
 
-void init_dictionary (DICTIONARY* d){
+static void init_dictionary (DICTIONARY* d){
 	char c;
 	ENTRY* temp;
+	d->next_index =0;
 	temp =(ENTRY *)malloc(sizeof(ENTRY));
 	
 	if (temp == NULL) {
@@ -98,30 +94,32 @@ void init_dictionary (DICTIONARY* d){
 		c =(char)i;
 		add_entry( d , c ,temp->index , temp->level);
 	}
+	//printf("fine init \n");
 }
 
 
-/**
- * Clear table
- * @param table The table to clear
- */
-void
-clear_dictionary(DICTIONARY* d) {
-  
-}
-
-/**
- * This function resets the hash table, deallocates it and its entries
- */
-void
-destroy_dictionary(DICTIONARY* d) {
-  
+static void destroy_dictionary(DICTIONARY* d) {
+ ENTRY* current_entry;
+    ENTRY* tmp;
+   
+	HASH_ITER(hh, d->root, current_entry, tmp) {
+		 HASH_DEL(d->root, current_entry);
+     		 free(current_entry);
+	}
+	
 }
 
 
+static void reset_dictionary(DICTIONARY* d) {
+  destroy_dictionary(d);
+  init_dictionary(d);
+}
 
 
-void print_dictionary(DICTIONARY* d) {
+
+
+/*
+static void print_dictionary(DICTIONARY* d) {
     ENTRY* current_entry;
     ENTRY* tmp;
    
@@ -131,16 +129,16 @@ void print_dictionary(DICTIONARY* d) {
 	
 		  printf("\n fine printf \n");
 }
+*/
 
-
-ENTRY* find_entry (DICTIONARY* d,int index){
+/*ENTRY* find_entry (DICTIONARY* d,int index){
 	ENTRY* tmp ;
 	HASH_FIND_INT( d->root, &index, tmp );  
 	return tmp;
 }
+*/
 
-
-char* find_code(DICTIONARY* d,int index){
+char* find_code(DICTIONARY* d,int index, int* num){
 	ENTRY* tmp;
 	ENTRY* oldtmp;
 	char* ret;
@@ -148,57 +146,99 @@ char* find_code(DICTIONARY* d,int index){
 	int i;
 	int flag = 0;
 	ret = NULL;
-	if(index == d->next_index){
-		add_entry(d ,d->current_pointer->value, d->current_pointer->index ,d->current_pointer->level );
-		flag=1;
-	}
 	
-	HASH_FIND_INT( d->root, &index, tmp ); 
-	if(tmp!=NULL)
-	{
-		
-		printf("find \n");
-		n = tmp->level;
-		
-		ret = (char*)malloc(sizeof(char)*(n+1)); 		// +1 end string
-		memset(ret, 0,sizeof(char)*(n+1));
-		
-		printf("n ==   %d \n",n);
-		tmp = NULL;
-		oldtmp = NULL;
-		i= index;
-		
-		HASH_FIND_INT( d->root, &i, tmp );
-		oldtmp = tmp;
-
-		while(n>0)
-		{	 
-			n--;
-			printf("value   %c   father  %d  \n",tmp->value,tmp->father);
-			printf("value father  %c   father  %d  \n",oldtmp->value,oldtmp->father);
-			ret[n]=tmp->value;
-			i=tmp->father;
+		if(index == d->next_index){
 			
-			if(tmp->father == 0 && d->current_pointer != d->root && flag==0)
-			{
-				printf("aggiungo value %c   index current  %d  \n", tmp->value , d->current_pointer->index);
-				add_entry(d ,tmp->value, d->current_pointer->index ,d->current_pointer->level );
-			}
-			HASH_FIND_INT( d->root, &i, tmp );
+			//printf("add 1\n");
+			add_entry(d ,d->current_pointer->value, d->current_pointer->index ,d->current_pointer->level );
+			flag=1;
 		}
+	
+		HASH_FIND_INT( d->root, &index, tmp ); 
+		if(tmp!=NULL)
+		{
 		
-		d->current_pointer = oldtmp;
+			//printf("find \n");
+			*num = n = tmp->level;
+		
+			ret = (char*)malloc(sizeof(char)*(n+2)); 		// +1 end string
+			memset(ret, 0,sizeof(char)*(n+2));
+		
+			//printf("n ==   %d \n",n);
+			tmp = NULL;
+			oldtmp = NULL;
+			i= index;
+		
+			HASH_FIND_INT( d->root, &i, tmp );
+			oldtmp = tmp;
+			while(n>0)
+			{	 
+				n--;
+				//printf("value   %c   father  %d  \n",tmp->value,tmp->father);
+				//printf("value father  %c   father  %d  \n",oldtmp->value,oldtmp->father);
+				ret[n]=tmp->value;
+				i=tmp->father;
+			
+				if(tmp->father == 0 && d->current_pointer != d->root && flag==0)
+				{
+					//printf("aggiungo value %c   index current  %d  \n", tmp->value , d->current_pointer->index);
+					
+					//printf("add 2\n");
+					add_entry(d ,tmp->value, d->current_pointer->index ,d->current_pointer->level );
+				}
+				HASH_FIND_INT( d->root, &i, tmp );
+			}
+		
+			d->current_pointer = oldtmp;
 		
 		
-	}
-	else
-	{
-			printf(" not find \n");
-	}
+		}
+		else
+		{
+				printf(" not find \n");
+		}
+	
+	
 	return ret; 
 }
 
+int decompressor(bit_io* bit_input, bit_io* bit_output, unsigned int dictionary_size){
 
+	DICTIONARY* dictionary = new_dictionary(dictionary_size);
+	init_dictionary(dictionary);
+	int i;
+	unsigned long crc=0;
+	char* branch;
+	int num;
+	unsigned int index;
+	uint64_t buffer;
+	while(bit_read(bit_input,32,&buffer)>0){
+		index = le32toh((uint32_t)buffer);
+		//printf("index %u\n",(unsigned int) index);
+		if(index==0) goto eof;
+		if(dictionary->size < dictionary->next_index)
+			reset_dictionary(dictionary);			
+
+		branch = find_code(dictionary,index,&num);
+		//printf("symbol write: ");
+		for(i=0;i<num;i++){
+			bit_write(bit_output,8, branch[i]);
+			//printf("%c",(char) branch[i]);
+			crc = update_crc(crc,&branch[i],1);
+		}
+		//printf("\n");
+	}
+	printf("error decompressor: index 0 not read\n");
+	eof: printf("read EOF\n");
+	bit_read(bit_input,64,&buffer);
+	unsigned long crc_read = le64toh(buffer);
+	printf("payload crc read: %lu\n", crc_read);
+	printf("payload crc calculated: %lu \n", crc);
+	if(crc_read==crc) printf("crc verified\n");
+	else printf("crc not verified\n");
+
+	return 0;
+}
 /*
 int main ()
 {
@@ -213,7 +253,7 @@ int main ()
 	printf("init\n");
 	
 	//abcabceeef
-	/*
+	
 	string = find_code(d,98);
 	if(string)
 		printf("value of index 98 %s \n",string);
@@ -269,11 +309,11 @@ int main ()
 	else 
 		printf("string null \n");
 	strcat(msg, string);
-	*/
+	
 	
 	//aaaaba
 	
-	/*
+	
 	printf("1 \n\n");
 	string = find_code(d,98);
 	if(string)
@@ -315,11 +355,11 @@ int main ()
 	else 
 		printf("string null \n");
 	strcat(msg, string);
-	*/
+	
 	
 	
 	//abcdaaaaaaaabcdgf
-	/*
+	
 	
 	string = find_code(d,98);
 	if(string)

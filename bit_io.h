@@ -6,14 +6,7 @@
 #define MODE_READ 0
 #define MODE_WRITE 1 
  
-typedef struct bitio { 
-	FILE * file_pointer;		
-	uint64_t data;				
-	u_int write_pointer;		
-	u_int read_pointer;			
-	u_int mode;     // 0 --> READ    1 --> WRITE
-} bit_io;
-
+typedef struct bitio bit_io;
  
 /* Creates a new bit_io opening a file f with the specificated mode */ 
 bit_io* bit_open(const char * name, u_int mode); 

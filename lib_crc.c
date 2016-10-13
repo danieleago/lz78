@@ -1,6 +1,4 @@
 #include "lib_crc.h"
-
-
 /*
  *   The CRC's are computed using polynomials. The  coefficients     
  *   for the algorithms are defined by the following constants.      
@@ -56,8 +54,8 @@ static unsigned long update_crc_32( unsigned long crc, char c ) {
 
 } 
 
-unsigned long update_crc( unsigned long crc, char* buffer, int num ) {
-	int i = 0;    
+unsigned long update_crc( unsigned long crc, char* buffer,unsigned int num ) {
+	unsigned int i = 0;    
 	unsigned long tmp = crc;
 	while( i < num ){
 		tmp= update_crc_32(tmp, buffer[i]);
