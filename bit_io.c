@@ -55,14 +55,15 @@ int bit_read (bit_io* pointer, u_int size , uint64_t *data)
 	*data =0;
 	space = pointer->write_pointer - pointer->read_pointer; //remaining space in the buffer: pointer->data
 	if(size==0) return 0;
-	if(size < space){ 
+	if(size <= space){ 
 		//read from buffer and update the read_pointer
 		*data = (pointer->data >> pointer->read_pointer) & ((1ULL<<size)-1);
 		pointer->read_pointer += size;
 	}else{
 		//partial read from buffer and do a new read from the file
-		*data = pointer->data >> pointer->read_pointer;
+		*data = (pointer->data >> pointer->read_pointer) & ((1ULL<<space)-1);
 		ret = fread((void*)& pointer->data, 1, 8, pointer->file_pointer); //read 8 objects of 1 byte
+		pointer->data = le64toh(pointer->data);
 		if(ret<0){
 			errno = ENODATA;
 			return -1;
@@ -96,13 +97,14 @@ int bit_write(bit_io* pointer, u_int size , uint64_t data)
 		return 0;
 	space = 64 - pointer->write_pointer;
 	if(size<64) data &= (1ULL<<size)-1;
-	pointer->data |= data << pointer-> write_pointer;	
-	if(size < space )
+	if(space!=0) pointer->data |= data << pointer-> write_pointer;	
+	if(size <= space )
 	{	
 		pointer->write_pointer += size;
 
 	}
 	else{
+		pointer->data = htole64(pointer->data);
 		ret=fwrite( (void*)&pointer->data,8,1,pointer->file_pointer);	
 		if(ret==-1)
 		{	
