@@ -7,20 +7,30 @@
 
 #include "constant.h"
 #include "bit_io.h"
+#include "header.h"
 
-extern int write_header(char *, bit_io*, unsigned int);
-extern int read_header(bit_io*,unsigned int*);
 extern int compressor(bit_io*, bit_io*,unsigned int);
 extern int decompressor(bit_io*, bit_io*, unsigned int);
 
-int option = 0;
-int compress = -1;
-int decompress = -1;
-int dictionary_size = -1;
-char* input_file= NULL;
-char* output_file= NULL;
-char* data_file = 0;
+typedef struct datainput{
+	int option;
+	int compress;
+	int decompress;
+	int dictionary_size;
+	char* input_file;
+	char* output_file;
+	char* data_file;
+} data_input;
 
+void datainput_init(data_input* d){
+	d->option = 0;
+	d->compress = -1;
+	d->decompress = -1;
+	d->dictionary_size = -1;
+	d->input_file= NULL;
+	d->output_file= NULL;
+	d->data_file = 0;
+}
 // funzione complessiva per la stampa degli errori
 void print_error(int tipo) {
 	printf("\nError:\n");
@@ -51,81 +61,82 @@ void print_error(int tipo) {
 }
 
 	
-void check_command_line(int num_arg, char *arg_value[])
+void check_command_line(int num_arg, char *arg_value[], data_input* d)
 {
-	while ((option = getopt(num_arg, arg_value,"cdl:i:o:")) != -1) {
-        switch (option) {
-            case 'c' : compress= 0;
+	while ((d->option = getopt(num_arg, arg_value,"cdl:i:o:")) != -1) {
+        switch (d->option) {
+            case 'c' : d->compress= 0;
        		    break;
-            case 'd' : decompress = 0;
+            case 'd' : d->decompress = 0;
                 break;
-            case 'l' : dictionary_size = atoi(optarg); 
+            case 'l' : d->dictionary_size = atoi(optarg); 
                 break;
-            case 'i' : input_file = optarg;
+            case 'i' : d->input_file = optarg;
                 break;
-	     	case 'o' : output_file = optarg;
+	     	case 'o' : d->output_file = optarg;
 		 		break;
             default: break;
         }
     }
-    if ((compress == -1 && decompress ==-1)||(compress == 0 && decompress ==0))  {
+    if ((d->compress == -1 && d->decompress ==-1)||(d->compress == 0 && d->decompress ==0))  {
         print_error( ERROR_PARAMITERS );
         exit(EXIT_FAILURE);
     }
 
-    if(compress==0 && dictionary_size==-1){ 
+    if(d->compress==0 && d->dictionary_size==-1){ 
 		 print_error( ERROR_SIZE );
 		 exit(EXIT_FAILURE);
 	}
 		
-	if(decompress==0 && dictionary_size!=-1){
+	if(d->decompress==0 && d->dictionary_size!=-1){
 		print_error ( ERROR_DICT_NOT_REQUIRED);
 		exit(EXIT_FAILURE);
 	}
 	
-    if(input_file==NULL){
+    if(d->input_file==NULL){
 		print_error( ERROR_INPUT_FILE );
 		exit(EXIT_FAILURE);
 	}
 		
-    if(output_file==NULL){
+    if(d->output_file==NULL){
 		print_error( ERROR_OUTPUT_FILE );
 		exit(EXIT_FAILURE);
 	} 
 	
 	printf("\n\n" );
-	if (compress == 0) {
+	if (d->compress == 0) {
         printf("Start compression..\n\n");
-        printf("dictionary size: %d\n",dictionary_size);
+        printf("dictionary size: %d\n",d->dictionary_size);
     }
 	
-    if (decompress == 0) {
+    if (d->decompress == 0) {
         printf("Start decompression..\n\n");
     }
 
-	printf("input file: %s\n",input_file);
-	printf("output file: %s\n",output_file);
+	printf("input file: %s\n",d->input_file);
+	printf("output file: %s\n",d->output_file);
 	
 }
 
 
 int main(int num_arg, char *arg_value[]) {
 	int result = 0;
-	
-	check_command_line(num_arg,arg_value);
+	data_input* d = (data_input*)calloc(1,sizeof(data_input));
+	datainput_init(d);
+	check_command_line(num_arg,arg_value,d);
 		
-	if ( compress == 0){
-		bit_io* bit_output = bit_open(output_file,1);
-		result = write_header(input_file, bit_output, dictionary_size);
-		bit_io* bit_input = bit_open(input_file,0);
-		compressor(bit_input, bit_output, dictionary_size);
+	if ( d->compress == 0){
+		bit_io* bit_output = bit_open(d->output_file,1);
+		result = write_header(d->input_file, bit_output, d->dictionary_size);
+		bit_io* bit_input = bit_open(d->input_file,0);
+		compressor(bit_input, bit_output, d->dictionary_size);
 		bit_close(bit_input);
 		bit_close(bit_output);
 	}
 	
-	if ( decompress == 0){
-		bit_io* bit_input = bit_open(input_file,0);
-		bit_io* bit_output = bit_open(output_file,1);
+	if ( d->decompress == 0){
+		bit_io* bit_input = bit_open(d->input_file,0);
+		bit_io* bit_output = bit_open(d->output_file,1);
 		unsigned int dictionary_size;
 		read_header(bit_input,&dictionary_size);
 		decompressor(bit_input, bit_output, dictionary_size);
