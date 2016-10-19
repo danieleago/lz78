@@ -14,12 +14,6 @@ int write_header(char *input_file, bit_io* bit_output, unsigned int dictionary_s
 	int i,ret;	
 	uint64_t buffer;
 	unsigned long header_crc = 0;	
-	//open() file input to get stat info
-	/*int fd_input = open(input_file, O_RDONLY);
-	if(fd_input<0){
-		printf("Error open() function of input file: %s\n",strerror(errno));
-		return -1;
-	}*/
 	if(bit_output==NULL){
 		printf("Error open file\n");			     
 		return -1;
@@ -41,10 +35,10 @@ int write_header(char *input_file, bit_io* bit_output, unsigned int dictionary_s
 		//printf("char to white: %c\n",input_file[i]);
 		buffer = input_file[i];
 		ret = bit_write(bit_output, 8,buffer);
-        	if (ret ==-1) {
-            		printf("Error writing file name\n");
-            		return -1;
-        	}
+        if (ret ==-1) {
+           		printf("Error writing file name\n");
+           		return -1;
+       	}
 		header_crc = update_crc(header_crc,(char*) &buffer,1);
 	}
 	
