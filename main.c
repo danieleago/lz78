@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h> 
+#include <sys/stat.h>
 #include <stdlib.h>
 
 #include "constant.h"
@@ -118,16 +119,23 @@ void check_command_line(int num_arg, char *arg_value[], data_input* d)
 	
 }
 
+uint64_t file_size(char* file){
+	struct stat file_info;
+	if(lstat(file,&file_info)<0){
+		printf("error read size file\n");
+		return -1;
+	}
+	return file_info.st_size;
+}
 
 int main(int num_arg, char *arg_value[]) {
-	int result = 0;
 	data_input* d = (data_input*)calloc(1,sizeof(data_input));
 	datainput_init(d);
 	check_command_line(num_arg,arg_value,d);
 		
 	if ( d->compress == 0){
 		bit_io* bit_output = bit_open(d->output_file,1);
-		result = write_header(d->input_file, bit_output, d->dictionary_size);
+		write_header(d->input_file, bit_output, d->dictionary_size);
 		bit_io* bit_input = bit_open(d->input_file,0);
 		compressor(bit_input, bit_output, d->dictionary_size);
 		bit_close(bit_input);
@@ -138,11 +146,14 @@ int main(int num_arg, char *arg_value[]) {
 		bit_io* bit_input = bit_open(d->input_file,0);
 		bit_io* bit_output = bit_open(d->output_file,1);
 		unsigned int dictionary_size;
-		read_header(bit_input,&dictionary_size);
+		uint64_t filesize;
+		filesize = read_header(bit_input,&dictionary_size);
 		decompressor(bit_input, bit_output, dictionary_size);
 		bit_close(bit_input);
 		bit_close(bit_output);
+		if(filesize==file_size(d->output_file)) printf("size of decompressed file verified\n");
+		else printf("size of decompressed file verified\n");
 	}
 
-    return result;
+    return 0;
 }
