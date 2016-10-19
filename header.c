@@ -144,5 +144,5 @@ int read_header(bit_io* bit_input, unsigned int* dictionary_size) {
 
 	bzero(filename,sizeof(char)*(length_name+1));
 	free(filename);
-	return 0;
+	return file_size;
 } 
