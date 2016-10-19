@@ -3,7 +3,6 @@
 #include <string.h>
 #include <errno.h> 
 #include <inttypes.h>
-#include "constant.h"
 #include "bit_io.h"
 
 struct bitio{ 
