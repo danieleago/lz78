@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 #include "lib_crc.h"
 /*
  *   The CRC's are computed using polynomials. The  coefficients     
@@ -55,7 +56,7 @@ static unsigned long update_crc_32( unsigned long crc, char c ) {
 } 
 
 //return 1 if little endian
-//return 2 if big endian
+//return 0 if big endian
 int check_endian(){
     int num = 1;
     if(*(char*)&num ==1)
@@ -64,9 +65,10 @@ int check_endian(){
         return 0;
 } 
 
-unsigned long update_crc( unsigned long crc, char* buffer,unsigned int num ) {
+unsigned long update_crc( unsigned long crc, uint64_t buff,unsigned int num ) {
 	unsigned int i = 0;    
 	unsigned long tmp = crc;
+    char* buffer = (char*)&buff;
     if(check_endian()==1){
 	    for(i=0;i < num; i++)
 	        tmp= update_crc_32(tmp, buffer[i]);     
