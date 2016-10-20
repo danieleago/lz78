@@ -1,18 +1,15 @@
+CC = cc
+CFLAGS = -c -Wall -O2
+LIBS = -lm
 main: main.o  lib_crc.o bit_io.o header.o  dictionary_compressor.o dictionary_decompressor.o 
-	gcc -Wall main.o lib_crc.o bit_io.o header.o dictionary_compressor.o dictionary_decompressor.o -o main
+	$(CC)  $^ -o $@ -o main $(LIBS)
 
-main.o: main.c 
-	gcc -Wall  -c main.c
-lib_crc.o: lib_crc.c lib_crc.h 
-	gcc -Wall  -c lib_crc.c
-header.o: header.c
-	gcc -Wall  -c header.c
-dictionary_decompressor.o: dictionary_decompressor.c dictionary_decompressor.h  
-	gcc -Wall  -c dictionary_decompressor.c 
-dictionary_compressor.o: dictionary_compressor.c dictionary_compressor.h  
-	gcc -Wall  -c dictionary_compressor.c 
-bit_io.o: bit_io.c bit_io.h 
-	gcc -Wall  -c bit_io.c
+main.o: constant.h header.h dictionary_decompressor.h dictionary_compressor.h bit_io.h
+lib_crc.o: lib_crc.h 
+header.o: header.h lib_crc.h bit_io.h
+dictionary_decompressor.o: dictionary_decompressor.h lib_crc.h bit_io.h uthash.h
+dictionary_compressor.o: dictionary_compressor.h lib_crc.h bit_io.h uthash.h
+bit_io.o: bit_io.h 
 
 clean:
 	rm -rf *.o
