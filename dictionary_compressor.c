@@ -1,37 +1,51 @@
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <fcntl.h>
+#include <errno.h> 
+#include <stdint.h>
+#include <math.h>
 
+#include "uthash.h"
+#include "bit_io.h"
+#include "lib_crc.h"
 #include "dictionary_compressor.h"
 
-struct KEY
+typedef struct key
 {
-	 ENTRY* pointer_father;
-	 char   value;				// current value
-};
+	int    father;
+	char   value;				// current value
+}key;
 
-struct ENTRY
+typedef struct entry
 {
-    	unsigned int father; 		// All the elements with father = 0 are children of root
    	unsigned int index;  		// index = 0 is the root of dictionary
-	KEY key	;			// for hashable
-	UT_hash_handle hh;          	// makes this structure hashable
-};
+	key mykey	;			        // for hashable
+	UT_hash_handle hh;          // makes this structure hashable
+} entry;
 
-struct DICTIONARY
+typedef struct dictionary
 {
-    ENTRY* root ;				// pointer of root 
-    ENTRY* current_pointer ;	// pointer of search
+    entry* root ;				// pointer of root 
+    entry* current_pointer ;	// pointer of search
     int size; 					// max number of element
     int next_index;				// next index for next entry
-};
+    int index_size; 			//number bits of index
+} dictionary;
+
+
 
 /**
- * DICTIONARY * new_dictionary(int size)
+ * dictionary * new_dictionary(int size)
  * It creates a new dictionary with a dimension specified by size
  * @param size The max number of elements which can be stored in the dictionary
  * @return The pointer to the dictionary
  */
- 
-static DICTIONARY* new_dictionary(int size) {
-    DICTIONARY * d = (DICTIONARY *)calloc(1, sizeof(DICTIONARY));
+
+
+static dictionary* new_dictionary(int size) {
+    dictionary * d = (dictionary *)calloc(1, sizeof(dictionary));
     if (d == NULL) {
         printf("\n  Error: dictionary allocation failed. \n");
         return NULL;
@@ -40,79 +54,79 @@ static DICTIONARY* new_dictionary(int size) {
 	d->next_index = 0;
 	d->root=NULL;
 	d->current_pointer=NULL;
+	d->index_size = ceil(log2(size));
     return d;
 }
 
 
-unsigned int index_entry(ENTRY* entry){
-	return entry->index;
-}
 
-
-char value_entry(ENTRY* entry){
-	return entry->key.value;
-}
-
-
-static void add_entry( DICTIONARY* d , char value, ENTRY* pointer_father) {
+static void add_entry( dictionary* d , char value, int father) {
     
-	ENTRY* temp;
+	entry* temp;
 	
-	temp =(ENTRY *)malloc(sizeof(ENTRY));
+	temp =(entry *)malloc(sizeof(entry));
 	
 	if (temp == NULL) {
         printf("\n  Error: dictionary allocation failed. \n");
         return;
 	}
-	memset(temp, 0, sizeof(ENTRY));
+	memset(temp, 0, sizeof(entry));
     temp->index = d->next_index;
 	d->next_index++;
-	temp->key.value = value;
-	temp->key.pointer_father = pointer_father;
-	if(pointer_father!=NULL)
-		temp->father= pointer_father->index;
-	else
-		temp->father=0;
-    HASH_ADD(hh, d->root, key,sizeof(KEY), temp );  				//index is name of unique key 
+	temp->mykey.value = value;
+	temp->mykey.father = father;
+    HASH_ADD(hh, d->root, mykey,sizeof(key), temp );  				//index is name of unique key 
+
 }
 
 
-static void init_dictionary (DICTIONARY* d){
+static void init_dictionary (dictionary* d){
 	char c;
 	int i;
-	d->next_index =0;
-	add_entry( d , ' ' ,d->root);
+	d->next_index = 0;
+	add_entry( d , EOF ,-1);
 	d->current_pointer = d->root;
 	for (i=0; i<=255; i++)
 	{
 		c =(char)i;
-		add_entry( d , c ,d->current_pointer);
+		add_entry( d , c ,0);
 	}
 }
 
 
-static void destroy_dictionary(DICTIONARY* d) {
- ENTRY* current_entry;
- ENTRY* tmp;
+static void destroy_dictionary(dictionary* d) {
+ entry* current_entry;
+ entry* tmp;
 	HASH_ITER(hh, d->root, current_entry, tmp) {
 		 HASH_DEL(d->root, current_entry);
      		 free(current_entry);
 	}
 }
 
-static void reset_dictionary(DICTIONARY* d) {
+static void reset_dictionary(dictionary* d) {
   destroy_dictionary(d);
   init_dictionary(d);
 }
 
 
-ENTRY* find_entry (DICTIONARY* d,char value) {
-	ENTRY* s;
-	ENTRY temp;
-	memset(&temp, 0, sizeof(ENTRY));
-	temp.key.value = value;
-	temp.key.pointer_father = d->current_pointer;
-	HASH_FIND(hh, d->root, &temp.key, sizeof(KEY), s);
+entry* find_entry (dictionary* d,char value) {
+
+	entry* s;
+	entry* temp;
+	s = NULL;
+	temp =(entry *)malloc(sizeof(entry));
+	
+	if (temp == NULL) {
+        printf("\n  Error: dictionary allocation failed. \n");
+        return NULL;
+	}
+	memset(temp, 0, sizeof(entry));
+	
+	temp->mykey.value = value;
+
+	temp->mykey.father = d->current_pointer->index;
+
+	HASH_FIND(hh, d->root, &(temp->mykey), sizeof(key), s);
 	
     if (s!=NULL)
 	{
@@ -122,36 +136,42 @@ ENTRY* find_entry (DICTIONARY* d,char value) {
 	{
 		d->current_pointer = d->root;
 	}
+	free(temp);
 	return s;
 }
+ 
+
 
 int compressor(bit_io* bit_input, bit_io* bit_output, unsigned int dictionary_size){
-	DICTIONARY* dictionary = new_dictionary(dictionary_size);
-	init_dictionary(dictionary);
-	ENTRY* entry=NULL;
-	ENTRY* new_entry = NULL;
+	dictionary* mydictionary = new_dictionary(dictionary_size);
+	entry* old_entry =NULL;
+	entry* new_entry = NULL;
+    init_dictionary(mydictionary);
+	
 	unsigned long crc=0;	
 	uint64_t symbol;
 	uint64_t buffer;
-	while(bit_read(bit_input,8,&symbol)>0){
-		crc = update_crc(crc,(char*)&symbol,1);
-		new_entry = find_entry(dictionary, (char)symbol);
+	while(bit_read(bit_input,8,&buffer)>0){
+		crc = update_crc(crc,buffer,1);
+		symbol = buffer;
+		new_entry = find_entry(mydictionary, (char)symbol);
 		if(new_entry==NULL){
-			buffer = htole32(index_entry(entry));
-			bit_write(bit_output,32, buffer );
-			if( dictionary->size >=  dictionary->next_index){
-				add_entry(dictionary,(char)symbol,entry);
+			buffer = old_entry->index;
+			bit_write(bit_output,mydictionary->index_size,buffer);
+			if( mydictionary->size > mydictionary->next_index){
+				add_entry(mydictionary,(char)symbol,old_entry->index);
 			}else{
-				reset_dictionary(dictionary);
+				reset_dictionary(mydictionary);
 			}
-			new_entry=find_entry(dictionary,(char)symbol);
+			new_entry=find_entry(mydictionary,(char)symbol);
 		}
-		entry = new_entry;
+		
+		old_entry = new_entry;
 	}
-	buffer = htole32(index_entry(entry));
-	bit_write(bit_output,32,buffer);
-	bit_write(bit_output,32,0);
-	buffer = htole64(crc);
+	buffer = old_entry->index;
+	bit_write(bit_output,mydictionary->index_size,buffer);
+	bit_write(bit_output,mydictionary->index_size,0);
+	buffer = crc;
 	bit_write(bit_output,64,buffer);
 	printf("\n..compression terminated with success!\n");
 	return 0;
