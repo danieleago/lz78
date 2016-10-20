@@ -1,15 +1,2 @@
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h> 
-#include <sys/stat.h> 
-#include <fcntl.h>
-#include <errno.h> 
-#include <stdint.h>
-
-#include "bit_io.h"
-#include "lib_crc.h"
-#include "uthash.h"
-
-
-typedef struct DICTIONARY DICTIONARY;
-typedef struct ENTRY ENTRY;
+//decompression of a file open with bit_open and using the dictionary size read from header
+int decompressor(bit_io*, bit_io*, unsigned int);

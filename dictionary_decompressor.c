@@ -1,198 +1,184 @@
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <fcntl.h>
+#include <errno.h> 
+#include <stdint.h>
+#include <math.h>
 
+#include "bit_io.h"
+#include "lib_crc.h"
+#include "uthash.h"
 #include "dictionary_decompressor.h"
 
-struct ENTRY
+typedef struct entry
 {
-    unsigned char value; 		// current value
-    unsigned int father; 		// All the elements with father = 0 are children of root , -1 is the father of root
-    unsigned int index;  		// index = 0 is the root of dictionary
-	unsigned int level; 		// number of level in tree
-	UT_hash_handle hh;          // makes this structure hashable
-};
+    char value; 				// current value
+    unsigned int father; 	    // index of father
 
-struct DICTIONARY
+} entry;
+
+typedef struct dictionary
 {
-    ENTRY* root ;				// pointer of root 
-    ENTRY* current_pointer ;	// pointer of current node 
+    entry* current_pointer ;	// pointer of current node
+    entry* array ;				// array of entry 
     int size; 					// max number of element
+    int index_size;				//number of bits of index
     int next_index;				// next index for next entry
-};
+    char* buffer;				//buffer to store the string found
+} dictionary;
 
 /**
- * DICTIONARY * new_dictionary(int size)
+ * dictionary * new_dictionary(int size)
  * It creates a new dictionary with a dimension specified by size
  * @param size The max number of elements which can be stored in the dictionary
  * @return The pointer to the dictionary
  */
  
-static DICTIONARY* new_dictionary(int size) {
-    DICTIONARY * d = (DICTIONARY *)calloc(1, sizeof(DICTIONARY));
+
+static dictionary* new_dictionary(int size) {
+	
+    dictionary * d = (dictionary *)calloc(1, sizeof(dictionary));
     if (d == NULL) {
         printf("\n  Error: dictionary allocation failed. \n");
         return NULL;
     }
     d->size = size;
 	d->next_index = 0;
-	d->root=NULL;
+	d->index_size = ceil(log2(size));
 	d->current_pointer=NULL;
+	d->buffer = (char*)malloc(sizeof(char)*(size+1));
+	d->array = (entry *)malloc(sizeof(entry)*(size+1));
+
+	if (d->array  == NULL) {
+        printf("\n  Error: array allocation failed. \n");
+        return NULL;
+	}
+	
+
     return d;
 }
 
 
 
-static void add_entry( DICTIONARY* d , char value,unsigned int father_index , unsigned int level) {
-    
-	ENTRY* temp;
-	
-	temp =(ENTRY *)malloc(sizeof(ENTRY));
-	
-	if (temp == NULL) {
-        printf("\n  Error: dictionary allocation failed. \n");
-        return;
-	}
-	memset(temp, 0, sizeof(ENTRY));
-    temp->index = d->next_index;
+static void add_entry( dictionary* d , char value , unsigned int father) {
+   
+    d->array[d->next_index].value = value;
+    d->array[d->next_index].father = father;
+
 	d->next_index++;
-	temp->father= father_index;
-	temp->value = value;
-	temp->level = level + 1 ;
-    HASH_ADD_INT( d->root,index, temp);  				//index is name of unique key 
+
 }
 
 
 
-static void init_dictionary (DICTIONARY* d){
+static void init_dictionary (dictionary* d){
+	
 	char c;
-	ENTRY* temp;
-	d->next_index =0;
-	temp =(ENTRY *)malloc(sizeof(ENTRY));
-	
-	if (temp == NULL) {
-        printf("\n  Error: dictionary allocation failed. \n");
-        return;
-	}
-	memset(temp, 0, sizeof(ENTRY));
-    temp->index = d->next_index;
-	d->next_index++;
-	temp->father= 0;
-	temp->value=' ';
-	temp->level=0;
-	
-    HASH_ADD_INT( d->root,index, temp);
-	
-	d->current_pointer = d->root;
 	int i;
+
+	d->next_index = 0;
+    add_entry( d ,EOF , -1);
+
+	d->current_pointer = &( d->array[0]);
+	
 	for (i=0; i<=255; i++)
 	{
 		c =(char)i;
-		add_entry( d , c ,temp->index , temp->level);
+		add_entry( d , c , 0);
 	}
+
 }
 
 
-static void destroy_dictionary(DICTIONARY* d) {
- ENTRY* current_entry;
-    ENTRY* tmp;
-   
-	HASH_ITER(hh, d->root, current_entry, tmp) {
-		HASH_DEL(d->root, current_entry);
-		bzero(current_entry,sizeof(DICTIONARY));
-    	free(current_entry);
-	}
+static void destroy_dictionary(dictionary* d) {
 	
+	memset(d->array,0,sizeof(entry)*d->size);
+
 }
 
 
-static void reset_dictionary(DICTIONARY* d) {
+static void reset_dictionary(dictionary* d) {
+
   destroy_dictionary(d);
   init_dictionary(d);
+
 }
 
 
-char* find_code(DICTIONARY* d,int index, int* num){
-	ENTRY* tmp;
-	ENTRY* oldtmp;
-	char* ret;
+char* find_code(dictionary* d,int index, int* num){
+
+	entry temp;
 	int n;
-	int i;
-	int flag = 0;
-	ret = NULL;
-	
-		if(index == d->next_index){
-			add_entry(d ,d->current_pointer->value, d->current_pointer->index ,d->current_pointer->level );
-			flag=1;
-		}
-	
-		HASH_FIND_INT( d->root, &index, tmp ); 
-		if(tmp!=NULL)
+ 	temp = d->array[index];
+	n = d->size;
+	d->array[d->next_index].father = index; 
+
+	if (d->current_pointer!=&(d->array[0])){ 	// non lo faccio dirante la prima ricerca 
+		while(temp.father!=0)
 		{
-			*num = n = tmp->level;
-		
-			ret = (char*)malloc(sizeof(char)*(n+2)); 		// +1 end string
-			memset(ret, 0,sizeof(char)*(n+2));
-			tmp = NULL;
-			oldtmp = NULL;
-			i= index;
-			HASH_FIND_INT( d->root, &i, tmp );
-			oldtmp = tmp;
-			while(n>0)
-			{	 
-				n--;
-				ret[n]=tmp->value;
-				i=tmp->father;
-			
-				if(tmp->father == 0 && d->current_pointer != d->root && flag==0)
-				{
-					add_entry(d ,tmp->value, d->current_pointer->index ,d->current_pointer->level );
-				}
-				HASH_FIND_INT( d->root, &i, tmp );
-			}		
-			d->current_pointer = oldtmp;
+			temp = d->array[temp.father];
 		}
-		else
-		{
-				printf(" not find \n");
-		}
-	
-	
-	return ret; 
-}
+		d->current_pointer->value = temp.value;
+	}
+
+ 	temp = d->array[index];
+
+ 	memset(d->buffer,0,sizeof(char)*(d->size+1));
+
+	while(temp.father!= -1)
+	{
+		d->buffer[n] = temp.value;
+		temp = d->array[temp.father];
+		n--;
+	}
+
+	d->current_pointer = &(d->array[d->next_index]);
+	d->next_index++;
+	*num = (d->size - n);
+
+	return &d->buffer[n+1]; 
+}	
 
 int decompressor(bit_io* bit_input, bit_io* bit_output, unsigned int dictionary_size){
 
-	DICTIONARY* dictionary = new_dictionary(dictionary_size);
-	init_dictionary(dictionary);
+	dictionary* mydictionary = new_dictionary(dictionary_size);
+	init_dictionary(mydictionary);
 	int i;
 	unsigned long crc=0;
 	char* branch;
 	int num;
 	unsigned int index;
 	uint64_t buffer;
-	while(bit_read(bit_input,32,&buffer)>0){
-		index = le32toh((uint32_t)buffer);
+	while(bit_read(bit_input,mydictionary->index_size,&buffer)>0){
+		index = buffer;
 		if(index==0) goto eof;
-		if(dictionary->size < dictionary->next_index)
-			reset_dictionary(dictionary);			
-		branch = find_code(dictionary,index,&num);
+		if(mydictionary->size < mydictionary->next_index)
+			reset_dictionary(mydictionary);			
+		branch = find_code(mydictionary,index,&num);
 		for(i=0;i<num;i++){
 			bit_write(bit_output,8, branch[i]);
-			crc = update_crc(crc,&branch[i],1);
+			crc = update_crc(crc,branch[i],1);
 		}
-		bzero(branch,sizeof(char)*(num+2));
-		free(branch);
+	
 	}
 	printf("error decompressor: index 0 not read\n");
 	eof: printf("\n..Decompression terminated!\n");
 	bit_read(bit_input,64,&buffer);
-	unsigned long crc_read = le64toh(buffer);
+	unsigned long crc_read = buffer;
 	printf("payload crc read: %lu\n", crc_read);
 	printf("payload crc calculated: %lu \n", crc);
 	if(crc_read==crc) printf("crc verified!\n");
 	else printf("crc not verified \n");
-	bzero(dictionary,sizeof(DICTIONARY));
-	free(dictionary);
+	
+	if(mydictionary!=NULL){
+		free(mydictionary->array);
+		free(mydictionary->buffer);
+
+		bzero(mydictionary,sizeof(dictionary));
+		free(mydictionary);
+	}
 	return 0;
 }
-/*
 
-} */
