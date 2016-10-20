@@ -9,9 +9,9 @@
 #include "constant.h"
 #include "bit_io.h"
 #include "header.h"
+#include "dictionary_compressor.h"
+#include "dictionary_decompressor.h"
 
-extern int compressor(bit_io*, bit_io*,unsigned int);
-extern int decompressor(bit_io*, bit_io*, unsigned int);
 
 typedef struct datainput{
 	int option;
@@ -154,6 +154,7 @@ int main(int num_arg, char *arg_value[]) {
 		if(filesize==file_size(d->output_file)) printf("size of decompressed file verified\n");
 		else printf("size of decompressed file verified\n");
 	}
-
+	bzero(d,sizeof(data_input));
+	free(d);
     return 0;
 }
