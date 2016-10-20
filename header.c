@@ -19,40 +19,37 @@ int write_header(char *input_file, bit_io* bit_output, unsigned int dictionary_s
 		return -1;
     }   
 
-    
+    //write the length of the name of the file
 	uint32_t length_name = strlen(input_file);
-	buffer = length_name;
-	//printf("length name: %d\n",length_name);	
+	buffer = length_name;	
 	ret = bit_write(bit_output, 32,buffer);
 	if (ret ==-1) {
         printf("Error writing file name length\n");
         return -1;
     }
-	header_crc = update_crc(header_crc,(char*)&buffer,4);	
+	header_crc = update_crc(header_crc,buffer,4);	
 
-
+	//write the name char to char 
 	for( i=0; i <  length_name ; i++){
-		//printf("char to white: %c\n",input_file[i]);
 		buffer = input_file[i];
 		ret = bit_write(bit_output, 8,buffer);
         if (ret ==-1) {
            		printf("Error writing file name\n");
            		return -1;
        	}
-		header_crc = update_crc(header_crc,(char*) &buffer,1);
+		header_crc = update_crc(header_crc, buffer,1);
 	}
 	
-
+	//write the size of the dictionary
     buffer = dictionary_size;   
-	//printf("dictionary size: %u\n",buf_dict);
 	ret = bit_write(bit_output, 32,buffer);
     	if (ret ==-1) {
         	printf("Error writing dictionary size\n");
         	return -1;
     	}
-   	header_crc =update_crc(header_crc, (char*) &buffer, 4);
+   	header_crc =update_crc(header_crc, buffer, 4);
 
-
+   	//write the size of the original file
 	struct stat file_info;
 	if(lstat(input_file,&file_info)<0){
 		printf("error read size file\n");
@@ -65,9 +62,9 @@ int write_header(char *input_file, bit_io* bit_output, unsigned int dictionary_s
         	printf("Error writing file size\n");
         	return -1;
     	}
-    header_crc =update_crc(header_crc, (char*) &buffer, 8);
+    header_crc =update_crc(header_crc, buffer, 8);
     
-
+    //write the crc of the header
 	buffer = header_crc;   
 	printf("header crc: %llu\n", buffer);
 	ret = bit_write(bit_output, 64, buffer);
@@ -91,7 +88,7 @@ int read_header(bit_io* bit_input, unsigned int* dictionary_size) {
             		printf("Error reading file name\n");
             		return -1;
         }
-	header_crc = update_crc(header_crc,(char*)&buffer,4);
+	header_crc = update_crc(header_crc,buffer,4);
 	length_name = buffer;
 
 	char* filename;
@@ -104,9 +101,7 @@ int read_header(bit_io* bit_input, unsigned int* dictionary_size) {
             		return -1;
         	}
 		filename[i] = (char) buffer;
-		//printf("%llu\n",buffer);
-		//printf("%c\n",filename[i]);
-		header_crc = update_crc(header_crc, (char*) &buffer,1);
+		header_crc = update_crc(header_crc, buffer,1);
 		
 	}
 	printf("original name file: %s \n", filename);
@@ -114,21 +109,20 @@ int read_header(bit_io* bit_input, unsigned int* dictionary_size) {
 
 	ret = bit_read(bit_input, 32, &buffer);
     if (ret != 32) {
-		//printf("%llu\n",buffer);
        	printf("Error reading dicionary size\n");
        	return -1;
    	}
-   	header_crc =update_crc(header_crc, (char*) &buffer, 4);
+   	header_crc =update_crc(header_crc, buffer, 4);
    	*dictionary_size = buffer;
 	printf("dictionary size: %u\n", *dictionary_size);
    
 
 	ret = bit_read(bit_input, 64, &buffer);
-    	if (ret != 64) {
-        	printf("Error writing file size \n");
-        	return -1;
-    	}
-    header_crc =update_crc(header_crc, (char*) &buffer, 8);
+    if (ret != 64) {
+        printf("Error writing file size \n");
+       	return -1;
+    }
+    header_crc =update_crc(header_crc, buffer, 8);
 	uint64_t file_size = buffer;
 	printf("original file size: %llu\n", file_size);
 	   
