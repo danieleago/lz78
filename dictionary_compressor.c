@@ -11,6 +11,27 @@
 #include "bit_io.h"
 #include "lib_crc.h"
 #include "dictionary_compressor.h"
+/*
+this struct (defined in uthash.h) must be present in the structure entry 
+It is used for the internal bookkeeping that makes the hash work
+
+typedef struct UT_hash_handle {
+   struct UT_hash_table *tbl;		 // pointer to hash table
+   void *prev;                       // prev element in app order      
+   void *next;                       // next element in app order      
+   struct UT_hash_handle *hh_prev;   // previous hh in bucket order    
+   struct UT_hash_handle *hh_next;   // next hh in bucket order        
+   void *key;                        // ptr to enclosing struct's key  
+   unsigned keylen;                  // enclosing struct's key len     
+   unsigned hashv;                   // result of hash-fcn(key)        
+} UT_hash_handle;
+
+we used the following macro of the library:
+	HASH_ADD  -> to add a entry to hash table (hashable by the key struct)
+	HASH_ITER -> to scan each element of hash table
+	HASH_DEL  -> to delete an element from hash table
+	HASH_FIND -> to find an element of hash table using the key
+*/
 
 typedef struct key
 {
@@ -20,8 +41,8 @@ typedef struct key
 
 typedef struct entry
 {
-   	unsigned int index;  		// index = 0 is the root of dictionary
-	key mykey	;			        // for hashable
+   	unsigned int index;  		// index = 0 is the root of dictionary, identify the node of the tree
+	key mykey	;			    // for hashable
 	UT_hash_handle hh;          // makes this structure hashable
 } entry;
 
@@ -112,21 +133,16 @@ static void reset_dictionary(dictionary* d) {
 entry* find_entry (dictionary* d,char value) {
 
 	entry* s;
-	entry* temp;
+	entry temp;
 	s = NULL;
-	temp =(entry *)malloc(sizeof(entry));
 	
-	if (temp == NULL) {
-        printf("\n  Error: dictionary allocation failed. \n");
-        return NULL;
-	}
-	memset(temp, 0, sizeof(entry));
+	memset(&temp, 0, sizeof(entry));
 	
-	temp->mykey.value = value;
+	temp.mykey.value = value;
 
-	temp->mykey.father = d->current_pointer->index;
+	temp.mykey.father = d->current_pointer->index;
 
-	HASH_FIND(hh, d->root, &(temp->mykey), sizeof(key), s);
+	HASH_FIND(hh, d->root, &(temp.mykey), sizeof(key), s);
 	
     if (s!=NULL)
 	{
@@ -136,7 +152,6 @@ entry* find_entry (dictionary* d,char value) {
 	{
 		d->current_pointer = d->root;
 	}
-	free(temp);
 	return s;
 }
  
