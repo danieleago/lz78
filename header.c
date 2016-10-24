@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include "header.h"
 #include "bit_io.h"
 #include "lib_crc.h"
 
