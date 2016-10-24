@@ -125,6 +125,7 @@ uint64_t file_size(char* file){
 		printf("error read size file\n");
 		return -1;
 	}
+	printf("decompressed file size: %llu\n", (uint64_t) file_info.st_size);
 	return file_info.st_size;
 }
 
@@ -151,8 +152,9 @@ int main(int num_arg, char *arg_value[]) {
 		decompressor(bit_input, bit_output, dictionary_size);
 		bit_close(bit_input);
 		bit_close(bit_output);
-		if(filesize==file_size(d->output_file)) printf("size of decompressed file verified\n");
-		else printf("size of decompressed file verified\n");
+		printf("original file size: %llu\n",filesize);
+		if(filesize ==file_size(d->output_file)) printf("size of decompressed file verified\n");
+		else printf("size of decompressed file not verified\n");
 	}
 	bzero(d,sizeof(data_input));
 	free(d);
