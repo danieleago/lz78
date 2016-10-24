@@ -7,9 +7,9 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "header.h"
 #include "bit_io.h"
 #include "lib_crc.h"
+#include "header.h"
 
 int write_header(char *input_file, bit_io* bit_output, unsigned int dictionary_size) {
 	int i,ret;	
