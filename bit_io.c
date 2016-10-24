@@ -128,16 +128,15 @@ int bit_close(bit_io* pointer)
 	}
 	if(pointer->mode == MODE_WRITE && pointer->write_pointer >0)
 	{
-		//printf("write pointer %d\n",pointer->write_pointer);
+		pointer->data = htole64(pointer->data);
 		ret =fwrite( (void*)&pointer->data,1, (pointer->write_pointer+7) /8 ,pointer->file_pointer);		
-		//printf("fwrite return %d\n",ret);
 		if(ret == -1)
 		{
 			errno = ENOSPC;			
 			return -1;
 		}
 	}
-	
+	fclose(pointer->file_pointer);
 	bzero(pointer, sizeof(*pointer));
 	free(pointer); 
 	return 0;
